@@ -10,6 +10,7 @@ from util.plugin_dev.api.v1.platform import *
 class Main:
     def __init__(self, context: Context) -> None:
         NAMESPACE = "astrbot_plugin_cryptomarket"
+        print(f"NAMESPACE: {NAMESPACE}")
         self.context = context
         self.context.register_commands(NAMESPACE, "market", "获取加密货币市场更新", 1, self.send_price_update)
         
@@ -18,13 +19,17 @@ class Main:
         put_config(NAMESPACE, "update_interval", "更新间隔（分钟）", "60", "请输入更新间隔，单位为分钟")
         
         self.cfg = load_config(NAMESPACE)
+        print(f"Loaded config: {self.cfg}")
+        # 使用 get 方法获取配置，如果不存在就使用默认值
+        self.SYMBOLS = self.cfg.get("symbols", "BTC/USDT,ETH/USDT").split(',')
+        self.UPDATE_INTERVAL = int(self.cfg.get("update_interval", "60"))
+
         self.singapore_tz = pytz.timezone('Asia/Singapore')
         self.exchange = ccxt.binance()
-        self.SYMBOLS = self.cfg["symbols"].split(',')
-        self.UPDATE_INTERVAL = int(self.cfg["update_interval"])
 
         # 注册定时任务
         self.context.register_task(self.scheduled_update(), "crypto_market_update")
+
 
     def get_ticker_info(self, symbol):
         ticker = self.exchange.fetch_ticker(symbol)
